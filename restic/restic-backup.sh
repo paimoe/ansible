@@ -70,9 +70,27 @@ for name in "${TARGETS[@]}"; do
         echo "ERROR: Unknown repo name '$name'. Valid names: ${!REPOS[*]}" >&2
         exit 1
     fi
+    
+    if output=$(restic -r "$path" backup --skip-if-unchanged --files-from "$HOME/automation/restic/includes.txt" --json --quiet); then
+    	summary=$(jq -c 'select(.message_type == "summary")' <<< "$output" | tail -n 1)
 
-    echo "──> restic -r \"$path\" backup --skip-if-unchanged --files-from ~/automation/restic/includes.txt"
-    restic -r "$path" backup --skip-if-unchanged --files-from ~/automation/restic/includes.txt
+    	if [[ -z "$summary" ]]; then
+            echo "[$name] Backup succeeded: unchanged; no snapshot created, completed: $(date --iso-8601=seconds)"
+    	else
+            printf '%s\n' "$output" |
+        	jq -r --arg NAME "${name}" '
+            	select(.message_type == "summary") |
+            	"[\(.backup_end | sub("\\.[0-9]+"; "")) | \($NAME)] Backup succeeded (\(.snapshot_id // "unchanged" | .[0:8])): " +
+            	"[\(.files_new)n, \(.files_changed)c] files, " +
+            	"[\(.dirs_new)n, \(.dirs_changed)c] dirs, " +
+            	"size: \((.total_bytes_processed / 1000000000 * 100 | round) / 100)GB, " +
+            	"duration: \(.total_duration | floor)s"
+        	'
+        fi
+    else
+        status=$?
+        echo "Backup FAILED with status $status: $(date --iso-8601=seconds)"
+        exit "$status"
+    fi
 done
 
-echo "──> All backups complete."

@@ -2,7 +2,9 @@
 /home/paimoe/automation/ansible/
 /home/paimoe/automation/restic/includes.txt
 /home/paimoe/automation/restic/restic-backup.sh
-/home/paimoe/automation/restic/crontab.txt
+/home/paimoe/automation/restic/crontab
+/home/paimoe/automation/restic/README.md
+/home/paimoe/automation/restic/install-cron.sh
 
 
 /home/paimoe/Desktop/

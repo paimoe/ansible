@@ -5,35 +5,30 @@ by name.  Repo paths are defined inside `restic-backup.sh`.
 
 ## Schedule
 
-The file `crontab.txt` contains a cron entry that runs the backup **every
+The file `crontab` contains a cron entry that runs the backup **every
 6 hours** against the `2tb` repo.
 
 ### Activate the crontab
 
-1. Open your user crontab editor:
-
-   ```bash
-   crontab -e
-   ```
-
-2. Copy the contents of `crontab.txt` into the editor and save.
-
-Alternatively, install it in one shot:
+Run the install script to symlink `crontab` into `/etc/cron.d/`:
 
 ```bash
-crontab crontab.txt
+sudo ./install-cron.sh
 ```
 
-> **Caution:** `crontab crontab.txt` **replaces** your existing crontab.
-> If you already have cron jobs, use `crontab -e` and paste the line in
-> manually instead.
+The entry is written to `/etc/cron.d/restic-backup` and cron will pick it
+up automatically.
+
+> **Note:** `crontab` includes a username field (`paimoe`) because
+> `/etc/cron.d/` entries require it.  If you prefer a user crontab instead,
+> remove the username and use `crontab -e`.
 
 ### Verify
 
-List your active cron jobs:
+Confirm the cron.d entry is in place:
 
 ```bash
-crontab -l
+cat /etc/cron.d/restic-backup
 ```
 
 Check the log after the next scheduled run:
@@ -42,7 +37,13 @@ Check the log after the next scheduled run:
 tail -f restic-backup.log
 ```
 
+   ```bash
+   crontab -e
+   ```
+
+Restart cron with `sudo systemctl restart cron`.
+
 ## Environment
 
 The script loads `RESTIC_PASSWORD` from the `.env` file in the same
-directory — no extra setup needed.
+directory.
