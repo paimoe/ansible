@@ -1,0 +1,37 @@
+# from home
+/home/paimoe/automation/ansible/
+/home/paimoe/automation/restic/includes.txt
+/home/paimoe/automation/restic/restic-backup.sh
+/home/paimoe/automation/restic/crontab.txt
+
+
+/home/paimoe/Desktop/
+/home/paimoe/Documents/
+/home/paimoe/Pictures/
+/home/paimoe/.config/
+
+# .ssh/
+
+/home/paimoe/quiz/
+/home/paimoe/Zotero/
+
+# ai bs
+/home/paimoe/.pi/
+/home/paimoe/.agents/
+/home/paimoe/.aider/
+#.cache?
+/home/paimoe/.claude/
+
+# games (kinda big)
+/home/paimoe/.factorio/
+
+# env stuff
+/home/paimoe/.bashrc
+/home/paimoe/.salix.env
+/home/paimoe/.gitconfig
+/home/paimoe/.env
+/home/paimoe/.arcboar.env
+
+# me stuff
+/home/paimoe/BUDGET.ods
+/home/paimoe/job/

@@ -1,0 +1,2 @@
+# run restic backup to the 2tb repo every 6 hours
+0 */6 * * * /home/paimoe/automation/restic/restic-backup.sh --repo 2tb >> /home/paimoe/automation/restic/restic-backup.log 2>&1
