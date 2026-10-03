@@ -1,0 +1,142 @@
+# Run with `ansible-playbook -i localhost, -K playbook.yaml`
+
+- name: paimoe pc
+  hosts: localhost
+  become: true
+
+  tasks:
+    - name: install regular software from apt
+      apt:
+        name: "{{ item }}"
+        state: present # this means install if not present, but DO NOT upgrade if present
+      loop:
+        - git
+        - htop
+        - curl
+        - wget # can i install things like sublime after these ones are complete?
+
+    - name: install snaps
+      community.general.snap:
+        name:
+          - spotify
+          - upnote
+          - hugo
+          - vlc
+
+    - name: install homebrews
+      become: false
+      homebrew:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - gh
+        - tree
+        - go@1.25
+        - go-task
+        - exercism
+        - cloc # count lines of code
+        - opencode
+
+    - name: Install Claude Code via Homebrew Cask
+      become: false
+      community.general.homebrew_cask:
+        name: claude-code
+        state: present
+
+    - name: install uv
+      shell: curl -LsSf https://astral.sh/uv/install.sh | sh
+      become: false
+      args:
+        creates: /home/paimoe/.local/bin/uv
+      register: uv_install
+
+    # - name: install zed for simple text editing
+    #   shell: curl -f https://zed.dev/install.sh | sh
+    #   become: false
+    #   args:
+    #     creates: /home/paimoe/.local/bin/zed
+    #   register: zed_install
+
+    # Need to test by uninstall docker
+    - name: install docker
+      shell: |
+        sudo apt update
+        sudo apt install ca-certificates curl
+        sudo install -m 0755 -d /etc/apt/keyrings
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+        # Add the repository to Apt sources:
+        echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+          $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt update
+        sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+        # Set up docker group
+        sudo groupadd docker
+        sudo usermod -aG docker $USER
+        newgrp docker
+
+        # Test docker
+        docker run hello-world
+      args:
+        creates: /usr/bin/docker
+      register: docker_install
+
+    - name: install aws cli
+      shell: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+      args:
+        creates: /usr/local/bin/aws
+      register: aws_cli_install
+
+    - name: sublime text
+      shell: |
+        wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo tee /etc/apt/keyrings/sublimehq-pub.asc > /dev/null
+        echo 'Types: deb\nURIs: https://download.sublimetext.com/\nSuites: apt/stable/\nSigned-By: /etc/apt/keyrings/sublimehq-pub.asc' | sudo tee /etc/apt/sources.list.d/sublime-text.sources
+        sudo apt update
+        sudo apt install sublime-text
+
+    - name: godot 4.5
+      shell: |
+        curl -L -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.5-stable/Godot_v4.5-stable_linux.x86_64.zip
+        unzip /tmp/godot.zip -d /opt/godot
+        ln -s /opt/godot/Godot_v4.5-stable_linux.x86_64 /usr/local/bin/godot
+      args:
+        c reates: /usr/local/bin/godot
+# install blanket from app store
+# kde connect or maybe syncthing is fine after i get that
+# yaak
+# jellyfin
+# zeal
+# zotero
+### TODO
+# restic [and set up cron]
+# syncthing
+# aegis maybe
+#pgadmin
+# add curl -s https://repo.jellyfin.org/install-debuntu.sh | sudo bash to ansible
+#  add nicotine-plus snap insatll to homebrew
+#  add pi-dev plus extensions
+
+#  paimoe@pa-home:~/work/gptc/aeo$ ll /media
+# total 16K
+# drwxr-xr-x   4 root  root  4.0K Dec  2  2023 ./
+# drwxr-xr-x  22 root  root  4.0K Jul 18  2025 ../
+# drwxrwxr-x+  4 media media 4.0K Jul  8 15:45 paimoe/
+
+#  paimoe@pa-home:~/work/gptc/aeo$ sudo -u jellyfin groups
+# jellyfin video render paimoe media
+
+# paimoe@pa-home:~/work/gptc/aeo$ sudo -u jellyfin ls /media/paimoe/
+# ls: cannot open directory '/media/paimoe/': Permission denied
+
+# ok jellyfin setup
+# nicotine plus setup for nmusic downloads
+# jellyfin can be accessed from apple tv
+# install apt lm-sensors
+# brew install zig

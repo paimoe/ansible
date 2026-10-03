@@ -1,0 +1,213 @@
+- name: Configure homelab
+  hosts: homelab
+  become: true
+
+  tasks:
+    - name: Verify privilege escalation
+      ansible.builtin.command: whoami
+      register: whoami
+      changed_when: false
+
+    - name: Show effective user
+      ansible.builtin.debug:
+        var: whoami.stdout
+
+    - name: Configure SSH
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config.d/99-homelab.conf
+        content: |
+          PubkeyAuthentication yes
+          PasswordAuthentication no
+          KbdInteractiveAuthentication no
+          PermitRootLogin no
+        owner: root
+        group: root
+        mode: "0644"
+        validate: "/usr/sbin/sshd -t -f %s"
+
+    - name: Install UFW
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+        update_cache: true
+
+    - name: Allow SSH from home LAN
+      community.general.ufw:
+        rule: allow
+        src: 192.168.0.0/24
+        port: "22"
+        proto: tcp
+
+    - name: Allow Glance dashboard from home LAN
+      community.general.ufw:
+        rule: allow
+        src: 192.168.0.0/24
+        port: "3000"
+        proto: tcp
+
+    - name: Default deny incoming
+      community.general.ufw:
+        direction: incoming
+        policy: deny
+
+    - name: Default allow outgoing
+      community.general.ufw:
+        direction: outgoing
+        policy: allow
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+
+    ### DOCKER ###
+    - name: Install Docker prerequisites
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+        state: present
+        update_cache: true
+
+    - name: Create apt keyring directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu
+          resolute stable
+        filename: docker
+        state: present
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Enable Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        enabled: true
+        state: started
+
+    ### pi-hole ###
+    - name: Create Pi-hole directory
+      ansible.builtin.file:
+        path: /srv/pihole
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create Pi-hole data directory
+      ansible.builtin.file:
+        path: /srv/pihole/etc-pihole
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install Pi-hole compose file
+      ansible.builtin.copy:
+        dest: /srv/pihole/compose.yaml
+        owner: root
+        group: root
+        mode: "0644"
+        content: | # This is my static ip for homelab at .174
+          services:
+            pihole:
+              container_name: pihole
+              image: pihole/pihole:latest
+              restart: unless-stopped
+
+              ports:
+                - "192.168.0.174:53:53/tcp"
+                - "192.168.0.174:53:53/udp"
+                - "192.168.0.174:8080:80/tcp"
+
+              environment:
+                TZ: Australia/Perth
+                FTLCONF_dns_listeningMode: ALL
+                FTLCONF_dns_upstreams: "1.1.1.1;1.0.0.1"
+                FTLCONF_dns_hosts: |
+                  192.168.0.174 homelab.home.arpa
+
+              volumes:
+                - /srv/pihole/etc-pihole:/etc/pihole
+
+    - name: Start Pi-hole
+      community.docker.docker_compose_v2:
+        project_src: /srv/pihole
+        state: present
+
+    ### Glance dashboard ###
+    - name: Create dashboard directory
+      ansible.builtin.file:
+        path: /srv/dashboard
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install dashboard compose file
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../dashboard/compose.yaml"
+        dest: /srv/dashboard/compose.yaml
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install Glance configuration
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../dashboard/glance.yml"
+        dest: /srv/dashboard/glance.yml
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install dashboard number-only styling
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../dashboard/stats.css"
+        dest: /srv/dashboard/stats.css
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install host uptime endpoint
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../dashboard/uptime.py"
+        dest: /srv/dashboard/uptime.py
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Initialize dashboard credentials (preserve existing password)
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../dashboard/.env.example"
+        dest: /srv/dashboard/.env
+        owner: root
+        group: root
+        mode: "0600"
+        force: false
+
+
+    - name: Start Glance dashboard
+      community.docker.docker_compose_v2:
+        project_src: /srv/dashboard
+        state: present

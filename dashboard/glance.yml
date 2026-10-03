@@ -1,0 +1,73 @@
+server:
+  assets-path: /app/assets
+
+theme:
+  custom-css-file: /assets/stats.css
+  background-color: 240 27 11
+  contrast-multiplier: 1.5
+  primary-color: 321 100 71
+  positive-color: 165 78 51
+  negative-color: 360 100 71
+
+pages:
+  - name: Pa's Hippidy Homelab
+    head-widgets:
+      - type: custom-api
+        title: Host uptime
+        cache: 1m
+        url: http://uptime:8081/
+        template: |
+          <div class="flex justify-between">
+            <div>
+              <div class="size-h5">UPTIME</div>
+              <div class="color-highlight size-h3">{{ .JSON.String "uptime" }}</div>
+            </div>
+            <div>
+              <div class="size-h5">LAST BOOT (AWST)</div>
+              <div class="color-highlight size-h3">{{ .JSON.String "last_boot" }}</div>
+            </div>
+          </div>
+      - type: server-stats
+        title: Homelab usage
+        servers:
+          - type: local
+            name: Homelab
+            hide-mountpoints-by-default: true
+            mountpoints:
+              /host/root:
+                name: Root disk
+                hide: false
+    columns:
+      - size: small
+        widgets:
+          - type: dns-stats
+            title: Pi-hole DNS
+            service: pihole-v6
+            url: http://pihole/
+            password: ${PIHOLE_APP_PASSWORD}
+          - type: markets
+            title: Artrya Share Price
+            title-url: https://www.asx.com.au/markets/company/AYA
+            markets:
+              - symbol: AYA.AX
+                name: Artrya
+                symbol-link: https://www.asx.com.au/markets/company/AYA
+                chart-link: https://www.asx.com.au/markets/company/AYA
+          - type: reddit
+            subreddit: selfhosted
+            style: vertical-cards
+            limit: 5
+      - size: full
+        widgets:
+          - type: monitor
+            title: Services
+            cache: 1m
+            sites:
+              - title: Pi-hole
+                url: http://192.168.0.174:8080/admin/
+                check-url: http://pihole/admin/
+                icon: si:pihole
+              - title: Glance
+                url: http://192.168.0.174:3000/
+                check-url: http://127.0.0.1:8080/
+                icon: sh:glance.png

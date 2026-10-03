@@ -1,0 +1,70 @@
+/* Glance already shows CPU, RAM and disk percentages; remove their bars. */
+.widget-type-server-stats .progress-bar {
+  display: none;
+}
+
+/* Make the full-width usage widget a readable three-metric panel. */
+.widget-type-server-stats .server {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.25rem;
+}
+
+.widget-type-server-stats .server-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  margin-top: 0;
+  padding-bottom: 0;
+}
+
+.widget-type-server-stats .server-stats > * {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  max-width: none;
+  min-height: 10rem;
+  padding: 1.5rem;
+  border: 1px solid var(--color-separator);
+  border-radius: var(--border-radius);
+}
+
+.widget-type-server-stats .server-stats > * > .flex {
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.widget-type-server-stats .server-stats > * > .flex .color-highlight {
+  font-size: clamp(2rem, 3vw, 3rem);
+  line-height: 1.1;
+}
+
+.widget-type-server-stats .server-name {
+  font-size: 1.5rem;
+}
+
+@media (max-width: 700px) {
+  .widget-type-server-stats .server-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .widget-type-server-stats .server-stats > * {
+    min-height: 6rem;
+  }
+}
+
+/* Give the feed one third and the service/status column two thirds on desktop. */
+@media (min-width: 1191px) {
+  .page-columns > .page-column-small:first-child {
+    width: calc((100% - var(--widget-gap)) / 3);
+  }
+
+  .page-columns > .page-column-full:last-child {
+    width: 0;
+    flex: 1;
+  }
+}
