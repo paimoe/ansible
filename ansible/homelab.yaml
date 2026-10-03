@@ -172,6 +172,7 @@
         owner: root
         group: root
         mode: "0644"
+      register: dashboard_compose_copy
 
     - name: Install Glance configuration
       ansible.builtin.copy:
@@ -180,6 +181,7 @@
         owner: root
         group: root
         mode: "0644"
+      register: glance_config_copy
 
     - name: Install dashboard number-only styling
       ansible.builtin.copy:
@@ -188,6 +190,7 @@
         owner: root
         group: root
         mode: "0644"
+      register: dashboard_css_copy
 
     - name: Install host uptime endpoint
       ansible.builtin.copy:
@@ -196,6 +199,7 @@
         owner: root
         group: root
         mode: "0644"
+      register: dashboard_uptime_copy
 
     - name: Initialize dashboard credentials (preserve existing password)
       ansible.builtin.copy:
@@ -205,9 +209,53 @@
         group: root
         mode: "0600"
         force: false
+      register: dashboard_env_copy
 
 
     - name: Start Glance dashboard
       community.docker.docker_compose_v2:
         project_src: /srv/dashboard
         state: present
+        # Bind-mounted files do not change Compose's service definition.
+        # Force recreation when Ansible installs any new dashboard file.
+        recreate: >-
+          {{ 'always' if (dashboard_compose_copy.changed or
+                          glance_config_copy.changed or
+                          dashboard_css_copy.changed or
+                          dashboard_uptime_copy.changed or
+                          dashboard_env_copy.changed) else 'auto' }}
+
+    ### Boot notification ###
+    - name: Install homelab boot notification script
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/bash_startup.sh"
+        dest: /usr/local/sbin/bash_startup.sh
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install homelab boot notification service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/homelab-startup.service
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Notify ntfy when homelab boots
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStart=/usr/local/sbin/bash_startup.sh
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable homelab boot notification for future boots
+      ansible.builtin.systemd_service:
+        name: homelab-startup.service
+        daemon_reload: true
+        enabled: true
