@@ -52,6 +52,13 @@
         port: "10001"
         proto: tcp
 
+    - name: Allow Trilium from home LAN
+      community.general.ufw:
+        rule: allow
+        src: 192.168.0.0/24
+        port: "11000"
+        proto: tcp
+
     - name: Default deny incoming
       community.general.ufw:
         direction: incoming
@@ -121,6 +128,9 @@
 
     - name: Deploy Glance dashboard
       ansible.builtin.import_tasks: tasks/dashboard.yml
+
+    - name: Deploy Trilium
+      ansible.builtin.import_tasks: tasks/trilium.yml
 
     - name: Enable boot notification
       ansible.builtin.import_tasks: tasks/boot.yml

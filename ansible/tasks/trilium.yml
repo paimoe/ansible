@@ -1,0 +1,28 @@
+- name: Create Trilium application directory
+  ansible.builtin.file:
+    path: /srv/trilium
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create Trilium data directory
+  ansible.builtin.file:
+    path: /srv/trilium/data
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0750"
+
+- name: Install Trilium compose file
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../trilium/compose.yaml"
+    dest: /srv/trilium/compose.yaml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Trilium
+  community.docker.docker_compose_v2:
+    project_src: /srv/trilium
+    state: present
