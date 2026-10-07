@@ -1,0 +1,33 @@
+- name: Install homelab boot notification script
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/bash_startup.sh"
+    dest: /usr/local/sbin/bash_startup.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install homelab boot notification service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/homelab-startup.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Notify ntfy when homelab boots
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/local/sbin/bash_startup.sh
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable homelab boot notification for future boots
+  ansible.builtin.systemd_service:
+    name: homelab-startup.service
+    daemon_reload: true
+    enabled: true

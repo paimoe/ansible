@@ -1,0 +1,48 @@
+- name: Create Pi-hole directory
+  ansible.builtin.file:
+    path: /srv/pihole
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create Pi-hole data directory
+  ansible.builtin.file:
+    path: /srv/pihole/etc-pihole
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install Pi-hole compose file
+  ansible.builtin.copy:
+    dest: /srv/pihole/compose.yaml
+    owner: root
+    group: root
+    mode: "0644"
+    content: | # This is my static ip for homelab at .174
+      services:
+        pihole:
+          container_name: pihole
+          image: pihole/pihole:latest
+          restart: unless-stopped
+
+          ports:
+            - "192.168.0.174:53:53/tcp"
+            - "192.168.0.174:53:53/udp"
+            - "192.168.0.174:8080:80/tcp"
+
+          environment:
+            TZ: Australia/Perth
+            FTLCONF_dns_listeningMode: ALL
+            FTLCONF_dns_upstreams: "1.1.1.1;1.0.0.1"
+            FTLCONF_dns_hosts: |
+              192.168.0.174 homelab.home.arpa
+
+          volumes:
+            - /srv/pihole/etc-pihole:/etc/pihole
+
+- name: Start Pi-hole
+  community.docker.docker_compose_v2:
+    project_src: /srv/pihole
+    state: present

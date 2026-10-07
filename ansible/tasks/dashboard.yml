@@ -1,0 +1,66 @@
+- name: Create dashboard directory
+  ansible.builtin.file:
+    path: /srv/dashboard
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install dashboard compose file
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dashboard/compose.yaml"
+    dest: /srv/dashboard/compose.yaml
+    owner: root
+    group: root
+    mode: "0644"
+  register: dashboard_compose_copy
+
+- name: Install Glance configuration
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dashboard/glance.yml"
+    dest: /srv/dashboard/glance.yml
+    owner: root
+    group: root
+    mode: "0644"
+  register: glance_config_copy
+
+- name: Install dashboard number-only styling
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dashboard/stats.css"
+    dest: /srv/dashboard/stats.css
+    owner: root
+    group: root
+    mode: "0644"
+  register: dashboard_css_copy
+
+- name: Install host uptime endpoint
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dashboard/uptime.py"
+    dest: /srv/dashboard/uptime.py
+    owner: root
+    group: root
+    mode: "0644"
+  register: dashboard_uptime_copy
+
+- name: Initialize dashboard credentials (preserve existing password)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../dashboard/.env.example"
+    dest: /srv/dashboard/.env
+    owner: root
+    group: root
+    mode: "0600"
+    force: false
+  register: dashboard_env_copy
+
+- name: Start Glance dashboard
+  community.docker.docker_compose_v2:
+    project_src: /srv/dashboard
+    state: present
+    # Bind-mounted files do not change Compose's service definition.
+    # Force recreation when Ansible installs any new dashboard file.
+    recreate: >-
+      {{ 'always' if (dashboard_compose_copy.changed or
+                      glance_config_copy.changed or
+                      dashboard_css_copy.changed or
+                      dashboard_uptime_copy.changed or
+                      dashboard_env_copy.changed) else 'auto' }}

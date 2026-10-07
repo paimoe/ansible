@@ -1,0 +1,39 @@
+- name: Create Immich directory
+  ansible.builtin.file:
+    path: /srv/immich
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Docker/Immich own the library and Postgres data directories; do not
+# reset their ownership or permissions on subsequent Ansible runs.
+- name: Install Immich compose file
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../immich/homelab/compose.yaml"
+    dest: /srv/immich/compose.yaml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Initialize Immich settings (preserve existing database password)
+  ansible.builtin.copy:
+    dest: /srv/immich/.env
+    owner: root
+    group: root
+    mode: "0600"
+    force: false
+    content: |
+      UPLOAD_LOCATION=/srv/immich/library
+      DB_DATA_LOCATION=/srv/immich/postgres
+      TZ=Australia/Perth
+      IMMICH_VERSION=v3
+      DB_PASSWORD={{ lookup('ansible.builtin.password', '/dev/null length=32 chars=ascii_letters,digits') }}
+      DB_USERNAME=postgres
+      DB_DATABASE_NAME=immich
+  no_log: true
+
+- name: Start Immich
+  community.docker.docker_compose_v2:
+    project_src: /srv/immich
+    state: present
