@@ -1,0 +1,45 @@
+- name: Create Karakeep application directory
+  ansible.builtin.file:
+    path: /srv/karakeep
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create Karakeep persistent directories
+  ansible.builtin.file:
+    path: "/srv/karakeep/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - data
+    - meilisearch
+
+- name: Install Karakeep compose file
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../karakeep/compose.yaml"
+    dest: /srv/karakeep/compose.yaml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Initialize Karakeep secrets (preserve existing configuration)
+  ansible.builtin.copy:
+    dest: /srv/karakeep/.env
+    owner: root
+    group: root
+    mode: "0600"
+    force: false
+    content: |
+      KARAKEEP_VERSION=release
+      NEXTAUTH_URL=http://192.168.0.174:12000
+      NEXTAUTH_SECRET={{ lookup('ansible.builtin.password', '/dev/null length=48 chars=ascii_letters,digits') }}
+      MEILI_MASTER_KEY={{ lookup('ansible.builtin.password', '/dev/null length=48 chars=ascii_letters,digits') }}
+  no_log: true
+
+- name: Start Karakeep
+  community.docker.docker_compose_v2:
+    project_src: /srv/karakeep
+    state: present
