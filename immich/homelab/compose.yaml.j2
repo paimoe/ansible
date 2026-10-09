@@ -10,7 +10,7 @@ services:
       - ${UPLOAD_LOCATION}:/data
       - /etc/localtime:/etc/localtime:ro
     ports:
-      - "192.168.0.174:10001:2283"
+      - "{{ ansible_host }}:{{ immich.PUBLIC_PORT }}:2283"
     depends_on:
       - redis
       - database
@@ -52,7 +52,7 @@ services:
     shm_size: 128mb
     # Host-only access for maintenance/SSH tunnelling; never expose Postgres to the LAN.
     ports:
-      - "127.0.0.1:10000:5432"
+      - "127.0.0.1:{{ immich.DB_PORT }}:5432"
     networks:
       - backend
     healthcheck:

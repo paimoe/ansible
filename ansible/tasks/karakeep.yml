@@ -18,8 +18,8 @@
     - meilisearch
 
 - name: Install Karakeep compose file
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../karakeep/compose.yaml"
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../karakeep/compose.yaml.j2"
     dest: /srv/karakeep/compose.yaml
     owner: root
     group: root
@@ -34,12 +34,22 @@
     force: false
     content: |
       KARAKEEP_VERSION=release
-      NEXTAUTH_URL=http://192.168.0.174:12000
+      NEXTAUTH_URL=https://karakeep.home.arpa
       NEXTAUTH_SECRET={{ lookup('ansible.builtin.password', '/dev/null length=48 chars=ascii_letters,digits') }}
       MEILI_MASTER_KEY={{ lookup('ansible.builtin.password', '/dev/null length=48 chars=ascii_letters,digits') }}
   no_log: true
+
+- name: Update Karakeep's canonical URL without replacing existing secrets
+  ansible.builtin.lineinfile:
+    path: /srv/karakeep/.env
+    regexp: '^NEXTAUTH_URL='
+    line: NEXTAUTH_URL=https://karakeep.home.arpa
+    mode: "0600"
+  no_log: true
+  register: karakeep_url_update
 
 - name: Start Karakeep
   community.docker.docker_compose_v2:
     project_src: /srv/karakeep
     state: present
+    recreate: "{{ 'always' if karakeep_url_update.changed else 'auto' }}"

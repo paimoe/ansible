@@ -43,7 +43,7 @@ pages:
           - type: dns-stats
             title: Pi-hole DNS
             service: pihole-v6
-            url: http://pihole/
+            url: http://pihole.home.arpa/
             password: ${PIHOLE_APP_PASSWORD}
           - type: markets
             title: Artrya Share Price
@@ -64,10 +64,22 @@ pages:
             cache: 1m
             sites:
               - title: Pi-hole
-                url: http://192.168.0.174:8080/admin/
-                check-url: http://pihole/admin/
+                url: https://pihole.home.arpa/admin/
+                check-url: http://pihole.home.arpa/admin/
                 icon: si:pihole
               - title: Glance
-                url: http://192.168.0.174:3000/
+                url: https://glance.home.arpa/
                 check-url: http://127.0.0.1:8080/
                 icon: sh:glance.png
+              - title: Trilium
+                url: https://trilium.home.arpa/
+                check-url: http://${HOMELAB_IP}:${TRILIUM_PUBLIC_PORT}/
+                icon: sh:trilium
+              - title: Karakeep
+                url: https://karakeep.home.arpa/
+                check-url: http://${HOMELAB_IP}:${KARAKEEP_PUBLIC_PORT}/api/health
+                icon: sh:karakeep
+              - title: Immich
+                url: https://immich.home.arpa/
+                check-url: http://${HOMELAB_IP}:${IMMICH_PUBLIC_PORT}/
+                icon: si:immich

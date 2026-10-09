@@ -15,8 +15,8 @@
     mode: "0750"
 
 - name: Install Trilium compose file
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../trilium/compose.yaml"
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../trilium/compose.yaml.j2"
     dest: /srv/trilium/compose.yaml
     owner: root
     group: root

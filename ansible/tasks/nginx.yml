@@ -1,0 +1,79 @@
+- name: Check that mkcert generated the site certificate on the controller
+  ansible.builtin.stat:
+    path: "{{ playbook_dir }}/../mkcert/{{ item }}"
+  loop:
+    - homelab.pem
+    - homelab-key.pem
+  delegate_to: localhost
+  become: false
+  register: homelab_cert_files
+
+- name: Require mkcert certificate before installing Nginx
+  ansible.builtin.assert:
+    that:
+      - homelab_cert_files.results[0].stat.isreg | default(false)
+      - homelab_cert_files.results[1].stat.isreg | default(false)
+    fail_msg: >-
+      Generate ../mkcert/homelab.pem and ../mkcert/homelab-key.pem on the
+      controller first; see ../mkcert/README.md. Never deploy rootCA-key.pem.
+
+- name: Install Nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+- name: Create Nginx certificate directory
+  ansible.builtin.file:
+    path: /etc/nginx/mkcert
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Install homelab TLS certificate
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../mkcert/homelab.pem"
+    dest: /etc/nginx/mkcert/homelab.pem
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Validate and reload nginx
+
+- name: Install homelab TLS private key
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../mkcert/homelab-key.pem"
+    dest: /etc/nginx/mkcert/homelab-key.pem
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify: Validate and reload nginx
+
+- name: Install homelab reverse proxy configuration
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../nginx/homelab.conf.j2"
+    dest: /etc/nginx/sites-available/homelab.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Validate and reload nginx
+
+- name: Disable default Nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Validate and reload nginx
+
+- name: Enable homelab Nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/homelab.conf
+    dest: /etc/nginx/sites-enabled/homelab.conf
+    state: link
+  notify: Validate and reload nginx
+
+- name: Enable Nginx at boot
+  ansible.builtin.systemd_service:
+    name: nginx
+    enabled: true
+    state: started

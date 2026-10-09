@@ -3,7 +3,7 @@ services:
     image: triliumnext/trilium:latest
     restart: unless-stopped
     ports:
-      - "192.168.0.174:11000:8080"
+      - "{{ ansible_host }}:{{ trilium.PUBLIC_PORT }}:8080"
     environment:
       TZ: Australia/Perth
       USER_UID: "1000"

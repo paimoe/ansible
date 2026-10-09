@@ -20,7 +20,7 @@
     owner: root
     group: root
     mode: "0644"
-    content: | # This is my static ip for homelab at .174
+    content: |
       services:
         pihole:
           container_name: pihole
@@ -28,19 +28,30 @@
           restart: unless-stopped
 
           ports:
-            - "192.168.0.174:53:53/tcp"
-            - "192.168.0.174:53:53/udp"
-            - "192.168.0.174:8080:80/tcp"
+            - "{{ ansible_host }}:{{ pihole.DNS_PORT }}:53/tcp"
+            - "{{ ansible_host }}:{{ pihole.DNS_PORT }}:53/udp"
+            - "{{ ansible_host }}:{{ pihole.PUBLIC_PORT }}:80/tcp"
 
           environment:
             TZ: Australia/Perth
+            FTLCONF_webserver_domain: pihole.home.arpa
             FTLCONF_dns_listeningMode: ALL
             FTLCONF_dns_upstreams: "1.1.1.1;1.0.0.1"
             FTLCONF_dns_hosts: |
-              192.168.0.174 homelab.home.arpa
+              {{ ansible_host }} homelab.home.arpa
+              {{ ansible_host }} pihole.home.arpa
+              {{ ansible_host }} glance.home.arpa
+              {{ ansible_host }} immich.home.arpa
+              {{ ansible_host }} trilium.home.arpa
+              {{ ansible_host }} karakeep.home.arpa
 
           volumes:
             - /srv/pihole/etc-pihole:/etc/pihole
+
+          networks:
+            default:
+              aliases:
+                - pihole.home.arpa
 
 - name: Start Pi-hole
   community.docker.docker_compose_v2:

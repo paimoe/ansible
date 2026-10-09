@@ -9,8 +9,8 @@
 # Docker/Immich own the library and Postgres data directories; do not
 # reset their ownership or permissions on subsequent Ansible runs.
 - name: Install Immich compose file
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../immich/homelab/compose.yaml"
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../immich/homelab/compose.yaml.j2"
     dest: /srv/immich/compose.yaml
     owner: root
     group: root

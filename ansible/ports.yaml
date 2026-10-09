@@ -1,0 +1,18 @@
+# Published host ports. Container-internal ports remain the applications' defaults.
+ssh:
+  PUBLIC_PORT: 22
+pihole:
+  PUBLIC_PORT: 8080
+  DNS_PORT: 53
+glance:
+  PUBLIC_PORT: 3000
+immich:
+  PUBLIC_PORT: 10001
+  DB_PORT: 10000  # bound to 127.0.0.1 only
+trilium:
+  PUBLIC_PORT: 11000
+karakeep:
+  PUBLIC_PORT: 12000
+nginx:
+  HTTP_PORT: 80
+  PUBLIC_PORT: 443  # canonical https:// URLs assume the standard HTTPS port

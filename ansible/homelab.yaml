@@ -1,6 +1,8 @@
 - name: Configure homelab
   hosts: homelab
   become: true
+  vars_files:
+    - ports.yaml
 
   tasks:
     - name: Verify privilege escalation
@@ -35,36 +37,56 @@
       community.general.ufw:
         rule: allow
         src: 192.168.0.0/24
-        port: "22"
+        port: "{{ ssh.PUBLIC_PORT | string }}"
         proto: tcp
 
     - name: Allow Glance dashboard from home LAN
       community.general.ufw:
         rule: allow
         src: 192.168.0.0/24
-        port: "3000"
+        port: "{{ glance.PUBLIC_PORT | string }}"
         proto: tcp
 
     - name: Allow Immich from home LAN
       community.general.ufw:
         rule: allow
         src: 192.168.0.0/24
-        port: "10001"
+        port: "{{ immich.PUBLIC_PORT | string }}"
         proto: tcp
 
     - name: Allow Trilium from home LAN
       community.general.ufw:
         rule: allow
         src: 192.168.0.0/24
-        port: "11000"
+        port: "{{ trilium.PUBLIC_PORT | string }}"
         proto: tcp
 
     - name: Allow Karakeep from home LAN
       community.general.ufw:
         rule: allow
         src: 192.168.0.0/24
-        port: "12000"
+        port: "{{ karakeep.PUBLIC_PORT | string }}"
         proto: tcp
+
+    - name: Allow Pi-hole DNS from home LAN
+      community.general.ufw:
+        rule: allow
+        src: 192.168.0.0/24
+        port: "{{ pihole.DNS_PORT | string }}"
+        proto: "{{ item }}"
+      loop:
+        - tcp
+        - udp
+
+    - name: Allow Nginx HTTP and HTTPS from home LAN
+      community.general.ufw:
+        rule: allow
+        src: 192.168.0.0/24
+        port: "{{ item | string }}"
+        proto: tcp
+      loop:
+        - "{{ nginx.HTTP_PORT }}"
+        - "{{ nginx.PUBLIC_PORT }}"
 
     - name: Default deny incoming
       community.general.ufw:
@@ -127,6 +149,9 @@
         enabled: true
         state: started
 
+    - name: Deploy Nginx reverse proxy
+      ansible.builtin.import_tasks: tasks/nginx.yml
+
     - name: Deploy Immich
       ansible.builtin.import_tasks: tasks/immich.yml
 
@@ -144,3 +169,15 @@
 
     - name: Enable boot notification
       ansible.builtin.import_tasks: tasks/boot.yml
+
+  handlers:
+    - name: Validate Nginx configuration
+      ansible.builtin.command: /usr/sbin/nginx -t
+      changed_when: false
+      listen: Validate and reload nginx
+
+    - name: Reload Nginx
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: reloaded
+      listen: Validate and reload nginx

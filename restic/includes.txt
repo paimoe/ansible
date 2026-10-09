@@ -37,3 +37,6 @@
 # me stuff
 /home/paimoe/BUDGET.ods
 /home/paimoe/job/
+
+# Cacert
+/home/paimoe/.local/share/mkcert

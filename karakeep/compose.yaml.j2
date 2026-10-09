@@ -4,7 +4,7 @@ services:
     image: ghcr.io/karakeep-app/karakeep:${KARAKEEP_VERSION:-release}
     restart: unless-stopped
     ports:
-      - "192.168.0.174:12000:3000"
+      - "{{ ansible_host }}:{{ karakeep.PUBLIC_PORT }}:3000"
     env_file:
       - .env
     environment:

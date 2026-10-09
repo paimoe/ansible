@@ -4,12 +4,16 @@ services:
     container_name: glance
     restart: unless-stopped
     ports:
-      - "192.168.0.174:3000:8080"
+      - "{{ ansible_host }}:{{ glance.PUBLIC_PORT }}:8080"
     environment:
       TZ: Australia/Perth
+      HOMELAB_IP: "{{ ansible_host }}"
       HOST_PROC: /host/proc
       HOST_SYS: /host/sys
       PIHOLE_APP_PASSWORD: ${PIHOLE_APP_PASSWORD:-}
+      TRILIUM_PUBLIC_PORT: "{{ trilium.PUBLIC_PORT }}"
+      KARAKEEP_PUBLIC_PORT: "{{ karakeep.PUBLIC_PORT }}"
+      IMMICH_PUBLIC_PORT: "{{ immich.PUBLIC_PORT }}"
     volumes:
       - ./glance.yml:/app/config/glance.yml:ro
       - ./stats.css:/app/assets/stats.css:ro
